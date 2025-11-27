@@ -2,61 +2,29 @@ package org.example;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
+import org.example.Expr;
+import org.example.Integer;
+import org.example.Add;
 
 
 public class Main {
+    record Int(int value) {
 
-    interface Expr {
-        interface Visitor<A> {
-        }
-
-        <A> @Nullable A accept(@NotNull Expr.Visitor<A> visitor);
-    }
-
-    record Integer(int value) implements Expr {
-        interface Visitor<A> extends Expr.Visitor<A> {
-            @Nullable A integer(int value);
-        }
-
-        @Override
-        public <A> @Nullable A accept(Expr.@NotNull Visitor<A> visitor) {
-            if (visitor instanceof Visitor<A>) {
-                return ((Visitor<A>) visitor).integer(this.value);
-            } else {
-                return null;
-            }
-        }
-    }
-
-    record Add(Expr lhs, Expr rhs) implements Expr {
-        interface Visitor<A> extends Expr.Visitor<A> {
-            @Nullable A add(Expr lhs, Expr rhs);
-        }
-
-        @Override
-        public <A> @Nullable A accept(Expr.@NotNull Visitor<A> visitor) {
-            if (visitor instanceof Visitor<A>) {
-                return ((Visitor<A>) visitor).add(this.lhs, this.rhs);
-            } else {
-                return null;
-            }
-        }
     }
 
     public static void main(String[] args) {
-        class Eval implements Integer.Visitor<Integer>, Add.Visitor<Integer> {
+        class Eval implements Integer.Visitor<Int>, Add.Visitor<Int> {
             @Override
-            public @Nullable Integer integer(int value) {
-                return new Integer((value));
+            public @Nullable Int integer(int value) {
+                return new Int((value));
             }
 
             @Override
-            public @Nullable Integer add(Expr lhs, Expr rhs) {
+            public @Nullable Int add(Expr lhs, Expr rhs) {
                 var left_result = lhs.accept(this);
                 var right_result = rhs.accept(this);
                 if (left_result != null && right_result != null) {
-                    return new Integer(left_result.value + right_result.value);
+                    return new Int(left_result.value + right_result.value);
                 } else {
                     return null;
                 }
