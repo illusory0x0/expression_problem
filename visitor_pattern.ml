@@ -1,6 +1,3 @@
-(* module type Data = sig
-    type a 
-end *)
 module Data = struct
   module type S = sig
     type a
@@ -31,8 +28,7 @@ module Add (S : Data.S) = struct
   class ['visitor] t (lhs : 'visitor Expr.t) (rhs : 'visitor Expr.t) =
     object
       constraint
-      'visitor = < add : 'visitor. 'visitor Expr.t -> 'visitor Expr.t -> S.a
-                 ; .. >
+      'visitor = < add : 'visitor Expr.t -> 'visitor Expr.t -> S.a ; .. >
 
       inherit ['visitor] Expr.t
       method accept : 'visitor -> S.a = fun vis -> vis#add lhs rhs
@@ -49,20 +45,44 @@ module Main (S : Data.S) = struct
   let expr = new Add.t lhs rhs
 end
 
-(* 
-let lhs :
-    < add : 'visitor 'a. 'visitor expr -> 'visitor expr -> 'a ; .. > integer =
-  new integer 1
+module IMain = Main (struct
+  type a = int
+end)
 
-let rhs :
-    < add : 'visitor 'a. 'visitor expr -> 'visitor expr -> 'a ; .. > integer =
-  new integer 2
+module SMain = Main (struct
+  type a = string
+end)
 
+let accept vis = IMain.lhs#accept vis
 
-class my_vis = object 
-  method integer : int -> int = fun x -> x
-  method add : int -> int -> int = (+)
-end 
-let expr = new add lhs rhs *)
+class eval =
+  object (self)
+    method integer : int -> int = fun x -> x
 
-(* let result = expr#accept (new my_vis) *)
+    method add : eval IMain.Expr.t -> eval IMain.Expr.t -> int =
+      fun lhs rhs -> lhs#accept (self :> eval) + rhs#accept (self :> eval)
+  end
+
+class printer =
+  object (self)
+    method integer : int -> string = string_of_int
+
+    method add : printer SMain.Expr.t -> printer SMain.Expr.t -> string =
+      fun lhs rhs ->
+        "("
+        ^ lhs#accept (self :> printer)
+        ^ "+"
+        ^ rhs#accept (self :> printer)
+        ^ ")"
+  end
+
+let main =
+  let vis = new eval in
+  let result = IMain.expr#accept vis in
+  print_int result;
+  print_newline ();
+  let vis = new printer in
+  let result = SMain.expr#accept vis in
+  print_string result;
+  print_newline ();
+  ()
