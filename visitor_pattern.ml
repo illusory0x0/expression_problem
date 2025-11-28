@@ -43,6 +43,12 @@ module Main (S : Data.S) = struct
   let lhs = new Integer.t 1
   let rhs = new Integer.t 2
   let expr = new Add.t lhs rhs
+
+  class virtual visitor =
+    object
+      method virtual integer : int -> S.a
+      method virtual add : visitor Expr.t -> visitor Expr.t -> S.a
+    end
 end
 
 module IMain = Main (struct
@@ -57,23 +63,22 @@ let accept vis = IMain.lhs#accept vis
 
 class eval =
   object (self)
-    method integer : int -> int = fun x -> x
-
-    method add : eval IMain.Expr.t -> eval IMain.Expr.t -> int =
-      fun lhs rhs -> lhs#accept (self :> eval) + rhs#accept (self :> eval)
+    inherit IMain.visitor
+    method integer x = x
+    method add lhs rhs = lhs#accept (self :> eval) + rhs#accept (self :> eval)
   end
 
 class printer =
   object (self)
-    method integer : int -> string = string_of_int
+    inherit SMain.visitor
+    method integer = string_of_int
 
-    method add : printer SMain.Expr.t -> printer SMain.Expr.t -> string =
-      fun lhs rhs ->
-        "("
-        ^ lhs#accept (self :> printer)
-        ^ "+"
-        ^ rhs#accept (self :> printer)
-        ^ ")"
+    method add lhs rhs =
+      "("
+      ^ lhs#accept (self :> printer)
+      ^ "+"
+      ^ rhs#accept (self :> printer)
+      ^ ")"
   end
 
 let main =
